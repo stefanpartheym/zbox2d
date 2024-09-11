@@ -1,13 +1,15 @@
-//! By convention, root.zig is the root source file when making a library. If
-//! you are making an executable, the convention is to delete this file and
-//! start with main.zig instead.
-const std = @import("std");
-const testing = std.testing;
+//! This file copied from [Box2D.zig repository](https://github.com/bluesillybeard/Box2D.zig/blob/master/src/box2dnative.zig).
 
-export fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
-
-test "basic add functionality" {
-    try testing.expect(add(3, 7) == 10);
-}
+// In C, you would only import the headers you need.
+// This is a binding, so ALL of the headers are included
+const c = @cImport({
+    // Many of these are unnessesary. They are all here since it was easiest to just
+    // add all of them without thinking about which ones are actually needed
+    @cInclude("box2d/base.h");
+    @cInclude("box2d/box2d.h");
+    @cInclude("box2d/collision.h");
+    @cInclude("box2d/id.h");
+    @cInclude("box2d/math_functions.h");
+    @cInclude("box2d/types.h");
+});
+pub usingnamespace c;
