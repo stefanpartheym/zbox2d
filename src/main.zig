@@ -1,33 +1,45 @@
-//! By convention, main.zig is where your main function lives in the case that
-//! you are building an executable. If you are making a library, the convention
-//! is to delete this file and start with root.zig instead.
 const std = @import("std");
+const zb = @import("zbox2d-native");
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    std.debug.print("# zbox2d-example #\n", .{});
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var worldDef = zb.b2DefaultWorldDef();
+    worldDef.gravity = .{ .x = 0.0, .y = -10.0 };
+    const worldId = zb.b2CreateWorld(&worldDef);
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    var groundBodyDef = zb.b2DefaultBodyDef();
+    groundBodyDef.position = zb.b2Vec2{ .x = 0.0, .y = -10.0 };
 
-    try bw.flush(); // Don't forget to flush!
-}
+    const groundId = zb.b2CreateBody(worldId, &groundBodyDef);
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+    const groundBox = zb.b2MakeBox(50.0, 10.0);
 
-test "fuzz example" {
-    // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-    const input_bytes = std.testing.fuzzInput(.{});
-    try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input_bytes));
+    const groundShapeDef = zb.b2DefaultShapeDef();
+
+    _ = zb.b2CreatePolygonShape(groundId, &groundShapeDef, &groundBox);
+
+    var bodyDef = zb.b2DefaultBodyDef();
+    bodyDef.type = zb.b2_dynamicBody;
+    bodyDef.position = zb.b2Vec2{ .x = 0.0, .y = 4.0 };
+    const bodyId = zb.b2CreateBody(worldId, &bodyDef);
+
+    const dynamicBox = zb.b2MakeBox(1.0, 1.0);
+
+    var shapeDef = zb.b2DefaultShapeDef();
+    shapeDef.density = 1.0;
+    shapeDef.friction = 0.3;
+
+    _ = zb.b2CreatePolygonShape(bodyId, &shapeDef, &dynamicBox);
+
+    const timeStep = 1.0 / 60.0;
+    const subStepCount = 4;
+    for (0..90) |_| {
+        zb.b2World_Step(worldId, timeStep, subStepCount);
+        const position = zb.b2Body_GetPosition(bodyId);
+        const rotation = zb.b2Body_GetRotation(bodyId);
+        std.debug.print("{d:4.2} {d:4.2} {d:4.2}\n", .{ position.x, position.y, zb.b2Rot_GetAngle(rotation) });
+    }
+
+    zb.b2DestroyWorld(worldId);
 }
