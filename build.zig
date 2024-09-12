@@ -6,11 +6,15 @@ pub fn build(b: *std.Build) void {
         .optimize = b.standardOptimizeOption(.{}),
     };
 
+    //
+    // Module
+    //
+
     // Dependencies
     const box2d_dep = b.dependency("box2d", .{});
 
     // Provide the (native) library as zig module.
-    const mod = b.addModule("zbox2d-native", .{
+    const mod = b.addModule("zbox2d", .{
         .root_source_file = b.path("src/root.zig"),
         .target = options.target,
         .optimize = options.optimize,
@@ -24,9 +28,15 @@ pub fn build(b: *std.Build) void {
     for (box2d_source_files) |file| {
         mod.addCSourceFile(.{
             .file = box2d_dep.path(b.pathJoin(&.{ "src", file })),
-            .flags = &.{},
         });
     }
+
+    //
+    // Example
+    //
+
+    // Dependencies
+    const raylib_dep = b.dependency("raylib-zig", .{});
 
     // Provide an executable to run a basic box2d example.
     const exe = b.addExecutable(.{
@@ -36,7 +46,29 @@ pub fn build(b: *std.Build) void {
         .optimize = options.optimize,
     });
 
-    exe.root_module.addImport("zbox2d-native", mod);
+    // Add box2d include paths to a compile step.
+    // NOTE:
+    // This might be necessary in order to make ZLS happy and provide LSP support
+    // for native box2d symbols.
+    // Otherwise, ZLS will complain about missing headers included in this modules
+    // `root.zig`.
+    // This is why this function is public and can be used in a consuming zig
+    // project as follows:
+    //
+    // ```zig
+    // const zbox2d_dep = b.dependency("zbox2d", options);
+    // //...
+    // for (zbox2d_dep.module("zbox2d").include_dirs.items) |include_dir| {
+    //     exe.addIncludePath(include_dir.path.dupe(b));
+    // }
+    // ```
+    for (box2d_include_paths) |include_path| {
+        exe.addIncludePath(box2d_dep.path(include_path));
+    }
+
+    exe.linkLibrary(raylib_dep.artifact("raylib"));
+    exe.root_module.addImport("zbox2d", mod);
+    exe.root_module.addImport("raylib", raylib_dep.module("raylib"));
 
     b.installArtifact(exe);
 
@@ -48,10 +80,14 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
+    //
+    // Unit tests
+    //
+
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    // Library unit tests.
+    // Module unit tests.
     const mod_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/root.zig"),
         .target = options.target,
