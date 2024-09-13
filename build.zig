@@ -52,9 +52,11 @@ pub fn build(b: *std.Build) void {
     // for native box2d symbols.
     // Otherwise, ZLS will complain about missing headers included in this modules
     // `root.zig`.
-    // This is why this function is public and can be used in a consuming zig
-    // project as follows:
     //
+    // If you're consuming this package in your own project, you can add the
+    // include paths from the dependency to your compile step to also have LSP
+    // support.
+    // The following example code shows how to do that:
     // ```zig
     // const zbox2d_dep = b.dependency("zbox2d", options);
     // //...
