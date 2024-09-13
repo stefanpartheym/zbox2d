@@ -8,7 +8,7 @@ Zig package that provides the [box2d](https://box2d.org/) API.
 > For a zig wrapper, go to [Box2D.zig](https://github.com/bluesillybeard/Box2D.zig).
 
 > [!NOTE]
-> Currently, this package provides [box2d v3.0.0](https://github.com/erincatto/box2d/releases/tag/v3.0.0).
+> Currently, this package provides [box2d v3.1.0](https://github.com/erincatto/box2d/commit/9314f303a7cdd6171f7ae06cd1bbf110efffe3cc).
 
 ## Compatibility
 
