@@ -32,15 +32,18 @@ pub fn build(b: *std.Build) void {
     }
 
     //
-    // Example
+    // Dependencies
     //
 
-    // Dependencies
     const raylib_dep = b.dependency("raylib-zig", .{});
+
+    //
+    // Example (basic)
+    //
 
     // Provide an executable to run a basic box2d example.
     const exe = b.addExecutable(.{
-        .name = "zbox2d-example",
+        .name = "zbox2d-basic-example",
         .root_source_file = b.path("src/main.zig"),
         .target = options.target,
         .optimize = options.optimize,
@@ -67,27 +70,51 @@ pub fn build(b: *std.Build) void {
     for (box2d_include_paths) |include_path| {
         exe.addIncludePath(box2d_dep.path(include_path));
     }
-
     exe.linkLibrary(raylib_dep.artifact("raylib"));
     exe.root_module.addImport("zbox2d", mod);
     exe.root_module.addImport("raylib", raylib_dep.module("raylib"));
-
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
-
     run_cmd.step.dependOn(b.getInstallStep());
-
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
 
+    const run_step = b.step("run", "Run basic example");
+    run_step.dependOn(&run_cmd.step);
+
+    //
+    // Example (basic 2D platformer)
+    //
+
+    // Provide an executable to run a basic box2d example.
+    const platformer_example_exe = b.addExecutable(.{
+        .name = "zbox2d-platformer-example",
+        .root_source_file = b.path("src/examples/platformer.zig"),
+        .target = options.target,
+        .optimize = options.optimize,
+    });
+    for (box2d_include_paths) |include_path| {
+        platformer_example_exe.addIncludePath(box2d_dep.path(include_path));
+    }
+    platformer_example_exe.linkLibrary(raylib_dep.artifact("raylib"));
+    platformer_example_exe.root_module.addImport("zbox2d", mod);
+    platformer_example_exe.root_module.addImport("raylib", raylib_dep.module("raylib"));
+    b.installArtifact(platformer_example_exe);
+
+    const platformer_example_run_cmd = b.addRunArtifact(platformer_example_exe);
+    platformer_example_run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        platformer_example_run_cmd.addArgs(args);
+    }
+
+    const platformer_example_run_step = b.step("run-platformer", "Run platformer 2D example");
+    platformer_example_run_step.dependOn(&platformer_example_run_cmd.step);
+
     //
     // Unit tests
     //
-
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
 
     // Module unit tests.
     const mod_unit_tests = b.addTest(.{
